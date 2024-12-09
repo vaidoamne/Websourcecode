@@ -9,6 +9,7 @@ import Home from './pages/home/home';
 import Ticket from './pages/ticket/ticket';
 import Tracking from './pages/tracking/tracking';
 import GlobeView from './pages/globeview/globeview';
+import Support from './pages/support/support';
 import './pages/styles/global.css';
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
           <Route path="/ticket" element={<Ticket />} />
           <Route path="/tracking" element={<Tracking />} />
           <Route path="/globeview" element={<GlobeView />} />
+          <Route path="/support" element={<Support />} />
         </Routes>
       </Router>
     </ThemeProvider>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   Box,
   Drawer,
@@ -13,7 +14,6 @@ import {
   LinearProgress,
   Stack
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
 import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
 import FlightIcon from '@mui/icons-material/Flight';
 import PublicIcon from '@mui/icons-material/Public';
@@ -24,6 +24,7 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import LocalGasStationIcon from '@mui/icons-material/LocalGasStation';
 import SentimentSatisfiedAltIcon from '@mui/icons-material/SentimentSatisfiedAlt';
 import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
+import SupportIcon from '@mui/icons-material/Support';
 import Chart from 'react-apexcharts';
 import SnowEffect from '../../components/SnowEffect/SnowEffect';
 
@@ -48,6 +49,11 @@ const Home = () => {
       title: 'Network View',
       icon: <PublicIcon />,
       path: '/globeview'
+    },
+    {
+      title: 'Support',
+      icon: <SupportIcon />,
+      path: '/support'
     }
   ];
 
@@ -93,7 +99,8 @@ const Home = () => {
         show: false
       },
       background: 'transparent',
-      height: 250
+      height: 250,
+      foreColor: '#E0E0E0'
     },
     stroke: {
       curve: 'smooth',
@@ -108,19 +115,30 @@ const Home = () => {
       categories: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '23:59'],
       labels: {
         style: {
-          colors: theme.palette.text.secondary
+          colors: '#E0E0E0'
         }
       }
     },
     yaxis: {
       labels: {
         style: {
-          colors: theme.palette.text.secondary
+          colors: '#E0E0E0'
         }
       }
     },
     theme: {
       mode: theme.palette.mode
+    },
+    tooltip: {
+      theme: 'dark',
+      style: {
+        fontSize: '12px'
+      },
+      y: {
+        formatter: function (val) {
+          return val
+        }
+      }
     }
   };
 
@@ -132,7 +150,8 @@ const Home = () => {
   const donutChartOptions = {
     chart: {
       type: 'donut',
-      background: 'transparent'
+      background: 'transparent',
+      foreColor: '#E0E0E0'
     },
     colors: [
       theme.palette.primary.main,
@@ -151,10 +170,16 @@ const Home = () => {
             total: {
               show: true,
               label: 'Total Trains',
-              color: theme.palette.text.primary
+              color: '#E0E0E0'
             }
           }
         }
+      }
+    },
+    tooltip: {
+      theme: 'dark',
+      style: {
+        fontSize: '12px'
       }
     }
   };
@@ -168,7 +193,8 @@ const Home = () => {
     chart: {
       type: 'bar',
       toolbar: { show: false },
-      height: 250
+      height: 250,
+      foreColor: '#E0E0E0'
     },
     plotOptions: {
       bar: {
@@ -183,6 +209,12 @@ const Home = () => {
     },
     theme: {
       mode: theme.palette.mode
+    },
+    tooltip: {
+      theme: 'dark',
+      style: {
+        fontSize: '12px'
+      }
     }
   };
 
@@ -195,7 +227,8 @@ const Home = () => {
     chart: {
       type: 'area',
       toolbar: { show: false },
-      height: 100
+      height: 100,
+      foreColor: '#E0E0E0'
     },
     stroke: {
       curve: 'smooth',
@@ -218,7 +251,13 @@ const Home = () => {
     yaxis: { show: false },
     grid: { show: false },
     colors: [theme.palette.primary.main],
-    tooltip: { enabled: true }
+    tooltip: { 
+      enabled: true,
+      theme: 'dark',
+      style: {
+        fontSize: '12px'
+      }
+    }
   };
 
   const fuelChartSeries = [{
@@ -229,7 +268,8 @@ const Home = () => {
   const supportChartOptions = {
     chart: {
       type: 'radialBar',
-      height: 180
+      height: 180,
+      foreColor: '#E0E0E0'
     },
     plotOptions: {
       radialBar: {
@@ -241,7 +281,7 @@ const Home = () => {
           name: {
             show: true,
             fontSize: '14px',
-            color: theme.palette.text.secondary
+            color: theme.palette.mode === 'dark' ? '#E0E0E0' : '#2C2C2C'
           },
           value: {
             show: true,
@@ -252,14 +292,21 @@ const Home = () => {
       }
     },
     labels: ['Resolution Rate'],
-    colors: [theme.palette.primary.main]
+    colors: [theme.palette.primary.main],
+    tooltip: {
+      theme: 'dark',
+      style: {
+        fontSize: '12px'
+      }
+    }
   };
 
   return (
     <Box sx={{ 
       display: 'flex',
       height: 'calc(100vh - 64px)',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      color: '#E0E0E0'
     }}>
       <Drawer
         variant="permanent"
@@ -282,6 +329,7 @@ const Home = () => {
               key={index}
               onClick={() => navigate(item.path)}
               sx={{
+                cursor: 'pointer',
                 '&:hover': {
                   backgroundColor: `${theme.palette.primary.main}22`
                 }
@@ -346,7 +394,7 @@ const Home = () => {
                 <Typography variant="h6" sx={{ my: 0.5, color: theme.palette.primary.main }}>
                   {card.value}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="#E0E0E0">
                   {card.title}
                 </Typography>
               </Paper>
@@ -437,15 +485,15 @@ const Home = () => {
               </Stack>
               <Grid container spacing={1}>
                 <Grid item xs={4}>
-                  <Typography variant="caption" color="text.secondary">Ongoing</Typography>
+                  <Typography variant="caption" color="#E0E0E0">Ongoing</Typography>
                   <Typography variant="h6" color="primary" sx={{ fontSize: '1.1rem' }}>{supportStats.ongoing}</Typography>
                 </Grid>
                 <Grid item xs={4}>
-                  <Typography variant="caption" color="text.secondary">Solved</Typography>
+                  <Typography variant="caption" color="#E0E0E0">Solved</Typography>
                   <Typography variant="h6" color="success.main" sx={{ fontSize: '1.1rem' }}>{supportStats.solved}</Typography>
                 </Grid>
                 <Grid item xs={4}>
-                  <Typography variant="caption" color="text.secondary">Pending</Typography>
+                  <Typography variant="caption" color="#E0E0E0">Pending</Typography>
                   <Typography variant="h6" color="warning.main" sx={{ fontSize: '1.1rem' }}>{supportStats.pending}</Typography>
                 </Grid>
                 <Grid item xs={12}>
@@ -552,4 +600,4 @@ const Home = () => {
   );
 };
 
-export default Home; 
+export default Home;
