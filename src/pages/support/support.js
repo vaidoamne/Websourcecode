@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   TextField,
@@ -18,11 +18,18 @@ import {
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import HistoryIcon from '@mui/icons-material/History';
+import { getSupportTickets, createSupportTicket } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const Support = () => {
   const theme = useTheme();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [tickets, setTickets] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
     subject: '',
     description: '',
@@ -30,22 +37,63 @@ const Support = () => {
     category: 'general'
   });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const newTicket = {
-      ...formData,
-      id: Date.now(),
-      status: 'pending',
-      createdAt: new Date().toISOString(),
+  useEffect(() => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+  }, [user, navigate]);
+
+  useEffect(() => {
+    const fetchTickets = async () => {
+      if (!user?.id) return;
+      
+      try {
+        setLoading(true);
+        const response = await getSupportTickets(user.id);
+        setTickets(response);
+      } catch (error) {
+        console.error('Failed to fetch tickets:', error);
+        setError('Failed to load support tickets.');
+      } finally {
+        setLoading(false);
+      }
     };
-    setTickets([newTicket, ...tickets]);
-    setFormData({
-      subject: '',
-      description: '',
-      priority: 'medium', 
-      category: 'general'
-    });
-    setShowHistory(true);
+
+    fetchTickets();
+  }, [user?.id]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!user) {
+      setError('Please log in to create a support ticket');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await createSupportTicket({
+        ...formData,
+        status: 'pending'
+      });
+
+      setTickets(prevTickets => [response, ...prevTickets]);
+      
+      setFormData({
+        subject: '',
+        description: '',
+        priority: 'medium',
+        category: 'general'
+      });
+      setShowHistory(true);
+    } catch (error) {
+      console.error('Failed to create ticket:', error);
+      setError(error.message || 'Failed to create support ticket. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleInputChange = (e) => {
@@ -160,7 +208,7 @@ const Support = () => {
 
           <Grid container spacing={3}>
             {tickets.map((ticket) => (
-              <Grid item xs={12} key={ticket.id}>
+              <Grid item xs={12} key={ticket._id || ticket.id}>
                 <Card 
                   elevation={3}
                   sx={{ 
@@ -194,7 +242,7 @@ const Support = () => {
                         color="primary"
                       />
                       <Typography variant="caption" color="textSecondary">
-                        {new Date(ticket.createdAt).toLocaleDateString()}
+                        {new Date(ticket.created_at).toLocaleDateString()}
                       </Typography>
                     </Box>
                   </CardContent>

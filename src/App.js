@@ -11,6 +11,8 @@ import Tracking from './pages/tracking/tracking';
 import GlobeView from './pages/globeview/globeview';
 import Support from './pages/support/support';
 import './pages/styles/global.css';
+import Sidebar from './components/Sidebar/Sidebar';
+import { Box } from '@mui/material';
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(true);
@@ -23,16 +25,31 @@ function App() {
     <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
       <CssBaseline />
       <Router>
-        <Header onThemeToggle={handleThemeToggle} isDarkMode={isDarkMode} />
-        <Routes>
-          <Route path="/" element={<Navigate to="/landing" />} />
-          <Route path="/landing" element={<Landing />} />
-          <Route path="/home" element={<Home />} />
-          <Route path="/ticket" element={<Ticket />} />
-          <Route path="/tracking" element={<Tracking />} />
-          <Route path="/globeview" element={<GlobeView />} />
-          <Route path="/support" element={<Support />} />
-        </Routes>
+        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+          <Header onThemeToggle={handleThemeToggle} isDarkMode={isDarkMode} />
+          <Box sx={{ 
+            display: 'flex', 
+            mt: '100px'
+          }}>
+            <Sidebar />
+            <Box sx={{ 
+              flexGrow: 1,
+              bgcolor: '#0A0B0E',
+              minHeight: 'calc(100vh - 100px)'
+            }}>
+              <Routes>
+                <Route path="/" element={<Navigate to="/landing" />} />
+                <Route path="/landing" element={<Landing />} />
+                <Route path="/login" element={<Landing />} />
+                <Route path="/home" element={<Home />} />
+                <Route path="/ticket" element={<Ticket />} />
+                <Route path="/tracking" element={<Tracking />} />
+                <Route path="/globeview" element={<GlobeView />} />
+                <Route path="/support" element={<Support />} />
+              </Routes>
+            </Box>
+          </Box>
+        </Box>
       </Router>
     </ThemeProvider>
   );

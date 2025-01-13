@@ -7,14 +7,20 @@ import {
   Button,
   Typography,
   Tab,
-  Tabs
+  Tabs,
+  Alert
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { loginUser, register } from '../../services/api';
 import trainBackground from '../../images/train-background.jpg';
 
 const Landing = () => {
+  const { login } = useAuth();
   const [tabValue, setTabValue] = useState(0);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
+    username: '',
     email: '',
     password: '',
     confirmPassword: ''
@@ -23,11 +29,48 @@ const Landing = () => {
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
+    setError('');
+    setFormData({
+      username: '',
+      email: '',
+      password: '',
+      confirmPassword: ''
+    });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    navigate('/home');
+    setError('');
+
+    try {
+      if (tabValue === 0) {
+        const userData = await loginUser({
+          username: formData.username,
+          password: formData.password
+        });
+        login(userData);
+        navigate('/home');
+      } else {
+        if (formData.password !== formData.confirmPassword) {
+          setError('Passwords do not match');
+          return;
+        }
+        await register({
+          username: formData.username,
+          email: formData.email,
+          password: formData.password
+        });
+        setTabValue(0);
+        setFormData({
+          username: '',
+          email: '',
+          password: '',
+          confirmPassword: ''
+        });
+      }
+    } catch (error) {
+      setError(error.message || (tabValue === 0 ? 'Login failed' : 'Registration failed'));
+    }
   };
 
   return (
@@ -70,7 +113,6 @@ const Landing = () => {
     >
       <Paper
         elevation={8}
-        className="login-panel"
         sx={{
           width: { xs: '90%', sm: '400px' },
           padding: { xs: 2, md: 4 },
@@ -78,7 +120,19 @@ const Landing = () => {
           marginRight: { xs: 'auto', md: '10%' },
           marginLeft: { xs: 'auto', md: '0' },
           position: 'relative',
-          zIndex: 1
+          zIndex: 1,
+          '& .MuiTab-root': {
+            color: 'black',
+            fontWeight: 500
+          },
+          '& .MuiTextField-root': {
+            '& label': {
+              color: 'rgba(0, 0, 0, 0.7)'
+            },
+            '& input': {
+              color: 'black'
+            }
+          }
         }}
       >
         <Tabs value={tabValue} onChange={handleTabChange} centered sx={{ mb: 3 }}>
@@ -86,16 +140,30 @@ const Landing = () => {
           <Tab label="Sign Up" />
         </Tabs>
 
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
         <form onSubmit={handleSubmit}>
           <TextField
             fullWidth
-            label="Email"
+            label="Username"
             variant="outlined"
             margin="normal"
             required
-            value={formData.email}
-            onChange={(e) => setFormData({...formData, email: e.target.value})}
+            value={formData.username}
+            onChange={(e) => setFormData({...formData, username: e.target.value})}
           />
+          {tabValue === 1 && (
+            <TextField
+              fullWidth
+              label="Email"
+              type="email"
+              variant="outlined"
+              margin="normal"
+              required
+              value={formData.email}
+              onChange={(e) => setFormData({...formData, email: e.target.value})}
+            />
+          )}
           <TextField
             fullWidth
             label="Password"

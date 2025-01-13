@@ -1,6 +1,5 @@
 import { createTheme } from '@mui/material/styles';
 
-// Dark theme configuration with orange primary colors and dark grays
 export const darkTheme = createTheme({
   palette: {
     mode: 'dark',
@@ -19,7 +18,6 @@ export const darkTheme = createTheme({
     },
   },
   components: {
-    // Card component styling with hover effect
     MuiCard: {
       styleOverrides: {
         root: {
@@ -30,7 +28,6 @@ export const darkTheme = createTheme({
         },
       },
     },
-    // Special styling for login panel to maintain readability
     MuiPaper: {
       styleOverrides: {
         root: {
@@ -60,7 +57,6 @@ export const darkTheme = createTheme({
   },
 });
 
-// Light theme configuration with coral primary colors and light grays
 export const lightTheme = createTheme({
   palette: {
     mode: 'light',
@@ -79,7 +75,6 @@ export const lightTheme = createTheme({
     },
   },
   components: {
-    // Card component styling with hover effect
     MuiCard: {
       styleOverrides: {
         root: {
@@ -90,7 +85,6 @@ export const lightTheme = createTheme({
         },
       },
     },
-    // Basic paper styling
     MuiPaper: {
       styleOverrides: {
         root: {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Box,
@@ -12,7 +12,9 @@ import {
   useTheme,
   Paper,
   LinearProgress,
-  Stack
+  Stack,
+  CircularProgress,
+  Container
 } from '@mui/material';
 import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
 import FlightIcon from '@mui/icons-material/Flight';
@@ -27,12 +29,110 @@ import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
 import SupportIcon from '@mui/icons-material/Support';
 import Chart from 'react-apexcharts';
 import SnowEffect from '../../components/SnowEffect/SnowEffect';
+import { getStats } from '../../services/api';
+import CircleIcon from '@mui/icons-material/Circle';
+import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
+import TrainIcon from '@mui/icons-material/Train';
 
 const drawerWidth = 240;
 
 const Home = () => {
   const navigate = useNavigate();
   const theme = useTheme();
+  const [statsData, setStatsData] = useState({
+    active_trains: 0,
+    daily_passengers: 0,
+    revenue_today: 0,
+    fuel_usage: 0,
+    passenger_satisfaction: 0,
+    satisfaction_trend: [],
+    passenger_traffic: [],
+    train_status: {
+      on_time: 0,
+      delayed: 0,
+      cancelled: 0
+    },
+    support_stats: {
+      total: 0,
+      ongoing: 0,
+      solved: 0,
+      pending: 0
+    },
+    timestamp: null
+  });
+  const [loading, setLoading] = useState(true);
+
+  const chartCommonOptions = {
+    chart: {
+        background: 'transparent',
+        toolbar: { show: false },
+        foreColor: '#6b7280'
+    },
+    grid: {
+        borderColor: 'rgba(255, 255, 255, 0.05)',
+        strokeDashArray: 5,
+        yaxis: {
+            lines: {
+                show: true,
+                opacity: 0.1
+            }
+        }
+    },
+    xaxis: {
+        labels: {
+            style: {
+                colors: new Array(12).fill('#6b7280'),
+                fontSize: '12px'
+            }
+        },
+        axisBorder: {
+            show: false
+        },
+        axisTicks: {
+            show: false
+        }
+    },
+    yaxis: {
+        labels: {
+            style: {
+                colors: ['#6b7280'],
+                fontSize: '12px'
+            }
+        }
+    },
+    tooltip: {
+        theme: 'dark',
+        style: { fontSize: '12px' },
+        x: { show: false }
+    }
+  };
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        const response = await getStats();
+        setStatsData(prevStats => ({
+          ...prevStats,
+          ...response
+        }));
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchStats();
+    const interval = setInterval(fetchStats, 600000);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (loading) {
+    return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <CircularProgress />
+    </Box>;
+  }
 
   const menuItems = [
     {
@@ -57,34 +157,34 @@ const Home = () => {
     }
   ];
 
-  const statsCards = [
+  const statsCards = statsData ? [
     {
       title: 'Active Trains',
-      value: '234',
+      value: statsData.active_trains,
       icon: <SpeedIcon sx={{ fontSize: 30, color: theme.palette.primary.main }} />,
     },
     {
       title: 'Daily Passengers',
-      value: '15,234',
+      value: statsData.daily_passengers.toLocaleString(),
       icon: <GroupIcon sx={{ fontSize: 30, color: theme.palette.primary.main }} />,
     },
     {
       title: 'Revenue Today',
-      value: '$45,678',
+      value: `$${statsData.revenue_today.toLocaleString()}`,
       icon: <TrendingUpIcon sx={{ fontSize: 30, color: theme.palette.primary.main }} />,
     },
     {
       title: 'Fuel Usage',
-      value: '2,345 L',
+      value: `${statsData.fuel_usage.toLocaleString()} L`,
       icon: <LocalGasStationIcon sx={{ fontSize: 30, color: theme.palette.primary.main }} />,
     }
-  ];
+  ] : [];
 
-  const supportStats = {
-    total: 150,
-    ongoing: 45,
-    solved: 89,
-    pending: 16
+  const supportStats = statsData.support_stats || {
+    total: 0,
+    ongoing: 0,
+    solved: 0,
+    pending: 0
   };
 
   const satisfactionData = {
@@ -224,39 +324,28 @@ const Home = () => {
   }];
 
   const fuelChartOptions = {
-    chart: {
-      type: 'area',
-      toolbar: { show: false },
-      height: 100,
-      foreColor: '#E0E0E0'
-    },
-    stroke: {
-      curve: 'smooth',
-      width: 2
-    },
+    ...chartCommonOptions,
+    colors: ['#FF9800'],
     fill: {
-      type: 'gradient',
-      gradient: {
-        shadeIntensity: 1,
-        opacityFrom: 0.7,
-        opacityTo: 0.2,
-        stops: [0, 90, 100]
-      }
-    },
-    dataLabels: { enabled: false },
-    xaxis: {
-      categories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-      labels: { show: false }
-    },
-    yaxis: { show: false },
-    grid: { show: false },
-    colors: [theme.palette.primary.main],
-    tooltip: { 
-      enabled: true,
-      theme: 'dark',
-      style: {
-        fontSize: '12px'
-      }
+        type: 'gradient',
+        gradient: {
+            shadeIntensity: 1,
+            opacityFrom: 0.7,
+            opacityTo: 0.3,
+            stops: [0, 90, 100],
+            colorStops: [
+                {
+                    offset: 0,
+                    color: '#FF9800',
+                    opacity: 0.4
+                },
+                {
+                    offset: 100,
+                    color: '#FF9800',
+                    opacity: 0.1
+                }
+            ]
+        }
     }
   };
 
@@ -301,302 +390,396 @@ const Home = () => {
     }
   };
 
-  return (
-    <Box sx={{ 
-      display: 'flex',
-      height: 'calc(100vh - 64px)',
-      overflow: 'hidden',
-      color: '#E0E0E0'
-    }}>
-      <Drawer
-        variant="permanent"
-        sx={{
-          width: drawerWidth,
-          flexShrink: 0,
-          '& .MuiDrawer-paper': {
-            width: drawerWidth,
-            boxSizing: 'border-box',
-            backgroundColor: theme.palette.background.paper,
-            borderRight: `1px solid ${theme.palette.divider}`,
-            mt: '64px'
-          },
-        }}
-      >
-        <List>
-          {menuItems.map((item, index) => (
-            <ListItem 
-              button 
-              key={index}
-              onClick={() => navigate(item.path)}
-              sx={{
-                cursor: 'pointer',
-                '&:hover': {
-                  backgroundColor: `${theme.palette.primary.main}22`
+  // Calculate total trains from train_status
+  const totalTrains = statsData?.train_status ? 
+    Object.values(statsData.train_status).reduce((a, b) => a + b, 0) : 0;
+
+  const renderTrainStatusChart = () => {
+    if (!statsData?.train_status) return null;
+
+    const { on_time, delayed, cancelled } = statsData.train_status;
+    
+    return (
+      <Paper sx={{ p: 2, bgcolor: 'background.paper' }}>
+        <Typography variant="h6" gutterBottom sx={{ color: 'white' }}>
+          Train Status Overview
+        </Typography>
+        <Chart
+          options={{
+            chart: {
+              type: 'pie',
+              background: 'transparent',
+              foreColor: '#fff'
+            },
+            labels: ['On Time', 'Delayed', 'Cancelled'],
+            colors: ['#00E396', '#FFA500', '#FF4560'],
+            legend: {
+              position: 'bottom',
+              labels: {
+                colors: '#fff'
+              }
+            },
+            tooltip: {
+              theme: 'dark',
+              y: {
+                formatter: (value) => `${value} trains`
+              }
+            },
+            dataLabels: {
+              enabled: true,
+              style: {
+                colors: ['#fff'],
+                fontSize: '14px'
+              },
+              formatter: (val) => `${Math.round(val)}%`
+            },
+            plotOptions: {
+              pie: {
+                donut: {
+                  size: '0%'
                 }
-              }}
-            >
-              <ListItemIcon sx={{ color: theme.palette.primary.main }}>
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText primary={item.title} />
-            </ListItem>
-          ))}
-        </List>
-      </Drawer>
-
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 0.75,
-          mt: '64px',
-          backgroundColor: theme.palette.background.default,
-          overflow: 'hidden',
-          height: '100%'
-        }}
-      >
-        {/* Holiday Panel */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: 0.75,
-            mb: 0.75,
-            backgroundColor: theme.palette.primary.main,
-            color: 'white',
-            position: 'relative',
-            overflow: 'hidden',
-            textAlign: 'center',
-            height: '32px'
+              }
+            }
           }}
-        >
-          <SnowEffect />
-          <Typography variant="subtitle2">
-            🎄 Merry Holidays! 🎅
-          </Typography>
-        </Paper>
+          series={[on_time, delayed, cancelled]}
+          type="pie"
+          height={300}
+        />
+      </Paper>
+    );
+  };
 
-        <Grid container spacing={0.75}>
-          {/* Stats Cards */}
-          {statsCards.map((card, index) => (
-            <Grid item xs={12} sm={6} md={3} key={index}>
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 1,
-                  textAlign: 'center',
-                  backgroundColor: theme.palette.background.paper,
-                  border: `1px solid ${theme.palette.divider}`,
-                  borderRadius: 2,
-                  height: '100%'
-                }}
-              >
-                {card.icon}
-                <Typography variant="h6" sx={{ my: 0.5, color: theme.palette.primary.main }}>
-                  {card.value}
-                </Typography>
-                <Typography variant="body2" color="#E0E0E0">
-                  {card.title}
-                </Typography>
-              </Paper>
-            </Grid>
-          ))}
+  const paperStyle = {
+    p: 2, 
+    bgcolor: 'rgba(17, 19, 23, 0.95)',
+    borderRadius: '12px',
+    border: '1px solid rgba(255, 152, 0, 0.2)',
+    boxShadow: `0 0 15px rgba(255, 152, 0, 0.1), 
+                inset 0 0 20px rgba(255, 152, 0, 0.05)`,
+    height: '100%',
+    transition: 'all 0.3s ease',
+    backdropFilter: 'blur(10px)',
+    position: 'relative',
+    '&::before': {
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        borderRadius: '12px',
+        border: '1px solid rgba(255, 152, 0, 0.1)',
+        pointerEvents: 'none'
+    }
+  };
 
-          {/* First Row Charts */}
-          <Grid item xs={12} md={6}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 1,
-                backgroundColor: theme.palette.background.paper,
-                border: `1px solid ${theme.palette.divider}`,
-                borderRadius: 2
-              }}
-            >
-              <Typography variant="subtitle2" gutterBottom>
-                Passenger Traffic Today
-              </Typography>
-              <Chart
-                options={{
-                  ...lineChartOptions,
-                  chart: {
-                    ...lineChartOptions.chart,
-                    height: 150
-                  }
-                }}
-                series={lineChartSeries}
-                type="line"
-                height={150}
-              />
-            </Paper>
-          </Grid>
+  const bannerStyle = {
+    position: 'fixed',
+    top: 64,
+    left: 0,
+    right: 0,
+    bgcolor: '#1a1a1a',
+    color: 'white',
+    p: 0.5,
+    textAlign: 'center',
+    zIndex: 1200,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 1,
+    overflow: 'hidden',
+    height: '36px',
+    boxShadow: 'inset 0 3px 6px rgba(0,0,0,0.6), inset 0 -1px 3px rgba(255,152,0,0.2)',
+    border: '1px solid #FF9800',
+    background: 'linear-gradient(180deg, #FF9800 0%, rgba(255, 152, 0, 0.8) 100%)',
+  };
 
-          <Grid item xs={12} md={6}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 1,
-                backgroundColor: theme.palette.background.paper,
-                border: `1px solid ${theme.palette.divider}`,
-                borderRadius: 2
-              }}
-            >
-              <Typography variant="subtitle2" gutterBottom>
-                Train Status
-              </Typography>
-              <Chart
-                options={{
-                  ...donutChartOptions,
-                  chart: {
-                    ...donutChartOptions.chart,
-                    height: 150
-                  }
-                }}
-                series={donutChartSeries}
-                type="donut"
-                height={150}
-              />
-            </Paper>
-          </Grid>
+  const revenueChartOptions = {
+    ...chartCommonOptions,
+    colors: ['#FF9800'],
+    plotOptions: {
+        bar: {
+            borderRadius: 4,
+            columnWidth: '60%',
+        }
+    },
+    fill: {
+        type: 'gradient',
+        gradient: {
+            shade: 'dark',
+            type: 'vertical',
+            gradientToColors: ['#FF9800'],
+            stops: [0, 100]
+        }
+    }
+  };
 
-          {/* Middle Row Widgets */}
-          <Grid item xs={12} md={4}>
-            <Paper elevation={0} sx={{ p: 1, border: `1px solid ${theme.palette.divider}`, borderRadius: 2, height: '100%' }}>
-              <Stack direction="row" alignItems="center" spacing={1} mb={0.5}>
-                <SentimentSatisfiedAltIcon color="primary" />
-                <Typography variant="subtitle2">Passenger Satisfaction</Typography>
-              </Stack>
-              <Typography variant="h5" color="primary" gutterBottom>
-                {satisfactionData.current}%
-              </Typography>
-              <LinearProgress 
-                variant="determinate" 
-                value={satisfactionData.current} 
-                sx={{ height: 6, borderRadius: 3 }} 
-              />
-            </Paper>
-          </Grid>
-
-          {/* Support Tickets Card */}
-          <Grid item xs={12} md={4}>
-            <Paper elevation={0} sx={{ p: 1.5, border: `1px solid ${theme.palette.divider}`, borderRadius: 2 }}>
-              <Stack direction="row" alignItems="center" spacing={1} mb={0.5}>
-                <ConfirmationNumberIcon color="primary" />
-                <Typography variant="subtitle2">Support Tickets</Typography>
-              </Stack>
-              <Grid container spacing={1}>
-                <Grid item xs={4}>
-                  <Typography variant="caption" color="#E0E0E0">Ongoing</Typography>
-                  <Typography variant="h6" color="primary" sx={{ fontSize: '1.1rem' }}>{supportStats.ongoing}</Typography>
-                </Grid>
-                <Grid item xs={4}>
-                  <Typography variant="caption" color="#E0E0E0">Solved</Typography>
-                  <Typography variant="h6" color="success.main" sx={{ fontSize: '1.1rem' }}>{supportStats.solved}</Typography>
-                </Grid>
-                <Grid item xs={4}>
-                  <Typography variant="caption" color="#E0E0E0">Pending</Typography>
-                  <Typography variant="h6" color="warning.main" sx={{ fontSize: '1.1rem' }}>{supportStats.pending}</Typography>
-                </Grid>
-                <Grid item xs={12}>
-                  <Chart
-                    options={{
-                      ...supportChartOptions,
-                      chart: {
-                        ...supportChartOptions.chart,
-                        height: 90
-                      },
-                      plotOptions: {
-                        ...supportChartOptions.plotOptions,
-                        radialBar: {
-                          ...supportChartOptions.plotOptions.radialBar,
-                          hollow: {
-                            size: '60%'
-                          },
-                          dataLabels: {
-                            name: {
-                              show: false
-                            },
-                            value: {
-                              fontSize: '16px',
-                              offsetY: 5
-                            }
-                          }
-                        }
-                      }
-                    }}
-                    series={[Math.round((supportStats.solved / supportStats.total) * 100)]}
-                    type="radialBar"
-                    height={80}
-                  />
-                </Grid>
-              </Grid>
-            </Paper>
-          </Grid>
-
-          {/* Fuel Consumption Trend */}
-          <Grid item xs={12} md={4}>
-            <Paper elevation={0} sx={{ p: 1.5, border: `1px solid ${theme.palette.divider}`, borderRadius: 2 }}>
-              <Stack direction="row" alignItems="center" spacing={1} mb={1}>
-                <LocalGasStationIcon color="primary" />
-                <Typography variant="subtitle2">Fuel Consumption Trend</Typography>
-              </Stack>
-              <Chart
-                options={fuelChartOptions}
-                series={fuelChartSeries}
-                type="area"
-                height={100}
-              />
-            </Paper>
-          </Grid>
-
-          {/* Bottom Row Charts */}
-          <Grid item xs={12} md={6}>
-            <Paper elevation={0} sx={{ p: 1, border: `1px solid ${theme.palette.divider}`, borderRadius: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>
-                Revenue Breakdown
-              </Typography>
-              <Chart
-                options={{
-                  ...barChartOptions,
-                  chart: { ...barChartOptions.chart, height: 130 }
-                }}
-                series={[{
-                  name: 'Revenue',
-                  data: [35000, 12000, 18000, 25000, 8000]
-                }]}
-                type="bar"
-                height={130}
-              />
-            </Paper>
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <Paper elevation={0} sx={{ p: 1, border: `1px solid ${theme.palette.divider}`, borderRadius: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>
-                Support Tickets Timeline
-              </Typography>
-              <Chart
-                options={{
-                  ...lineChartOptions,
-                  chart: { 
-                    ...lineChartOptions.chart, 
-                    height: 130
-                  }
-                }}
-                series={[{
-                  name: 'New Tickets',
-                  data: [25, 35, 20, 30, 40, 25]
-                }, {
-                  name: 'Resolved',
-                  data: [20, 30, 25, 25, 35, 30]
-                }]}
-                type="line"
-                height={130}
-              />
-            </Paper>
-          </Grid>
-        </Grid>
-      </Box>
+  const SatisfactionCircle = ({ value }) => (
+    <Box sx={{ 
+        position: 'relative', 
+        display: 'inline-flex',
+        padding: '20px'
+    }}>
+        <CircularProgress
+            variant="determinate"
+            value={100}
+            size={120}
+            thickness={4}
+            sx={{
+                color: 'rgba(255, 152, 0, 0.1)',
+                position: 'absolute',
+                filter: 'blur(4px)'
+            }}
+        />
+        <CircularProgress
+            variant="determinate"
+            value={value}
+            size={120}
+            thickness={4}
+            sx={{
+                color: '#FF9800',
+                filter: 'drop-shadow(0 0 4px rgba(255, 152, 0, 0.3))',
+                '& .MuiCircularProgress-circle': {
+                    strokeLinecap: 'round',
+                    stroke: '#FF9800'
+                }
+            }}
+        />
+        <Box sx={{
+            top: 0,
+            left: 0,
+            bottom: 0,
+            right: 0,
+            position: 'absolute',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexDirection: 'column'
+        }}>
+            <Typography variant="h4" sx={{ 
+                color: '#FF9800',
+                textShadow: '0 0 5px rgba(255, 152, 0, 0.2)'
+            }}>
+                {value}%
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                Satisfaction
+            </Typography>
+        </Box>
     </Box>
+  );
+
+  return (
+    <>
+        <Box sx={bannerStyle}>
+            <SnowEffect />
+            <span role="img" aria-label="tree">🎄</span>
+            Merry Holidays!
+            <span role="img" aria-label="smile">😊</span>
+        </Box>
+
+        <Box sx={{ 
+            display: 'flex',
+            flexDirection: 'column',
+            height: 'calc(100vh - 100px)',
+            p: 3,
+            gap: 3,
+            bgcolor: '#0A0B0E',
+            color: '#E0E0E0',
+            marginTop: '100px',
+            overflow: 'auto'
+        }}>
+            <Grid container spacing={3}>
+                <Grid item xs={3}>
+                    <Paper sx={paperStyle}>
+                        <Box>
+                            <Typography variant="h4" sx={{ color: '#FF9800' }}>
+                                {statsData?.active_trains || 234}
+                            </Typography>
+                            <Typography sx={{ color: '#6b7280' }}>Active Trains</Typography>
+                        </Box>
+                        <TrainIcon sx={{ color: '#FF9800', fontSize: 40 }} />
+                    </Paper>
+                </Grid>
+                <Grid item xs={3}>
+                    <Paper sx={paperStyle}>
+                        <Box>
+                            <Typography variant="h4" sx={{ color: '#FF9800' }}>
+                                {statsData?.daily_passengers?.toLocaleString() || '15,234'}
+                            </Typography>
+                            <Typography sx={{ color: '#6b7280' }}>Daily Passengers</Typography>
+                        </Box>
+                        <GroupIcon sx={{ color: '#FF9800', fontSize: 40 }} />
+                    </Paper>
+                </Grid>
+                <Grid item xs={3}>
+                    <Paper sx={paperStyle}>
+                        <Box>
+                            <Typography variant="h4" sx={{ color: '#FF9800' }}>
+                                ${statsData?.revenue_today?.toLocaleString() || '45,678'}
+                            </Typography>
+                            <Typography sx={{ color: '#6b7280' }}>Revenue Today</Typography>
+                        </Box>
+                        <MonetizationOnIcon sx={{ color: '#FF9800', fontSize: 40 }} />
+                    </Paper>
+                </Grid>
+                <Grid item xs={3}>
+                    <Paper sx={paperStyle}>
+                        <Box>
+                            <Typography variant="h4" sx={{ color: '#FF9800' }}>
+                                {statsData?.fuel_usage?.toLocaleString() || '2,345'}L
+                            </Typography>
+                            <Typography sx={{ color: '#6b7280' }}>Fuel Usage</Typography>
+                        </Box>
+                        <LocalGasStationIcon sx={{ color: '#FF9800', fontSize: 40 }} />
+                    </Paper>
+                </Grid>
+            </Grid>
+
+            <Grid container spacing={2}>
+                <Grid item xs={8}>
+                    <Paper sx={paperStyle}>
+                        <Typography variant="h6" gutterBottom sx={{ color: 'white' }}>
+                            Passenger Traffic Today
+                        </Typography>
+                        <Chart
+                            options={{
+                                ...chartCommonOptions,
+                                colors: ['#FF9800'],
+                                series: [{
+                                    name: 'Passengers',
+                                    data: statsData?.passenger_traffic || [300, 350, 600, 800, 700, 400]
+                                }]
+                            }}
+                            series={[{
+                                name: 'Passengers',
+                                data: statsData?.passenger_traffic || [300, 350, 600, 800, 700, 400]
+                            }]}
+                            type="line"
+                            height={250}
+                        />
+                    </Paper>
+                </Grid>
+                <Grid item xs={4}>
+                    <Paper sx={paperStyle}>
+                        <Typography variant="h6" gutterBottom sx={{ color: 'white' }}>
+                            Train Status
+                        </Typography>
+                        <Box sx={{ 
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            flex: 1,
+                            justifyContent: 'center'
+                        }}>
+                            <Typography variant="h2" sx={{ color: 'white', mb: 1 }}>
+                                100
+                            </Typography>
+                            <Typography sx={{ color: '#6b7280', mb: 3 }}>
+                                Total Trains
+                            </Typography>
+                            <Box sx={{ width: '100%' }}>
+                                <Box sx={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    mb: 2,
+                                    color: 'white'
+                                }}>
+                                    <Box sx={{ 
+                                        width: 8, 
+                                        height: 8, 
+                                        borderRadius: '50%', 
+                                        bgcolor: '#00E396',
+                                        mr: 1 
+                                    }} />
+                                    On Time (75)
+                                </Box>
+                                <Box sx={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    mb: 2,
+                                    color: 'white'
+                                }}>
+                                    <Box sx={{ 
+                                        width: 8, 
+                                        height: 8, 
+                                        borderRadius: '50%', 
+                                        bgcolor: '#FFA500',
+                                        mr: 1 
+                                    }} />
+                                    Delayed (20)
+                                </Box>
+                                <Box sx={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center',
+                                    color: 'white'
+                                }}>
+                                    <Box sx={{ 
+                                        width: 8, 
+                                        height: 8, 
+                                        borderRadius: '50%', 
+                                        bgcolor: '#FF4560',
+                                        mr: 1 
+                                    }} />
+                                    Cancelled (5)
+                                </Box>
+                            </Box>
+                        </Box>
+                    </Paper>
+                </Grid>
+            </Grid>
+
+            <Grid container spacing={2}>
+                <Grid item xs={4}>
+                    <Paper sx={paperStyle}>
+                        <Typography variant="h6" gutterBottom sx={{ color: 'white' }}>
+                            Passenger Satisfaction
+                        </Typography>
+                        <Box sx={{ 
+                            display: 'flex', 
+                            justifyContent: 'center', 
+                            alignItems: 'center',
+                            p: 2 
+                        }}>
+                            <SatisfactionCircle value={87} />
+                        </Box>
+                    </Paper>
+                </Grid>
+                <Grid item xs={4}>
+                    <Paper sx={paperStyle}>
+                        <Typography variant="h6" gutterBottom sx={{ color: 'white' }}>
+                            Daily Revenue
+                        </Typography>
+                        <Chart
+                            options={revenueChartOptions}
+                            series={[{
+                                name: 'Revenue',
+                                data: [45, 52, 38, 45, 42, 50, 46]
+                            }]}
+                            type="bar"
+                            height={200}
+                        />
+                    </Paper>
+                </Grid>
+                <Grid item xs={4}>
+                    <Paper sx={paperStyle}>
+                        <Typography variant="h6" gutterBottom sx={{ color: 'white' }}>
+                            Fuel Consumption Trend
+                        </Typography>
+                        <Chart
+                            options={fuelChartOptions}
+                            series={[{
+                                name: 'Fuel Usage',
+                                data: [30, 40, 35, 50, 49, 60, 70, 91, 125]
+                            }]}
+                            type="area"
+                            height={200}
+                        />
+                    </Paper>
+                </Grid>
+            </Grid>
+        </Box>
+    </>
   );
 };
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   TextField,
@@ -16,7 +16,8 @@ import {
   DialogContent,
   IconButton,
   Card,
-  CardContent
+  CardContent,
+  CircularProgress
 } from '@mui/material';
 import PersonIcon from '@mui/icons-material/Person';
 import EventIcon from '@mui/icons-material/Event';
@@ -26,6 +27,7 @@ import WbSunnyIcon from '@mui/icons-material/WbSunny';
 import CloudIcon from '@mui/icons-material/Cloud';
 import trainImage from '../../images/train.png';
 import './ticket.css';
+import { bookingService } from '../../services/api';
 
 const Ticket = () => {
   const theme = useTheme();
@@ -33,6 +35,22 @@ const Ticket = () => {
   const [tripType, setTripType] = useState('one-way');
   const [seatDialogOpen, setSeatDialogOpen] = useState(false);
   const [selectedSeats, setSelectedSeats] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    passengerName: '',
+    passengerCount: 1,
+    tripType: 'one-way',
+    class: 'business',
+    departureCity: '',
+    arrivalCity: '',
+    departureDate: '',
+    departureTime: '',
+    returnDate: '',
+    selectedSeats: []
+  });
+  const [availableTrains, setAvailableTrains] = useState([]);
+  const [selectedTrain, setSelectedTrain] = useState(null);
+  const [occupiedSeats, setOccupiedSeats] = useState([]);
 
   const handleSeatClick = (seat) => {
     if (selectedSeats.includes(seat)) {
@@ -50,6 +68,63 @@ const Ticket = () => {
     console.log('Selected seats:', selectedSeats);
     toggleSeatDialog();
   };
+
+  const handleInputChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleBooking = async () => {
+    try {
+      setLoading(true);
+      const bookingData = {
+        passenger_name: formData.passengerName,
+        passenger_count: formData.passengerCount,
+        trip_type: formData.tripType,
+        departure_city: formData.departureCity,
+        arrival_city: formData.arrivalCity,
+        departure_date: formData.departureDate,
+        departure_time: formData.departureTime,
+        return_date: formData.returnDate,
+        selected_seats: selectedSeats,
+        train_id: selectedTrain?.id
+      };
+      
+      const response = await bookingService.createBooking(bookingData);
+      console.log('Booking successful:', response);
+    } catch (error) {
+      console.error('Booking failed:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const fetchTrains = async () => {
+      if (formData.departureCity.length > 2 && formData.arrivalCity.length > 2) {
+        try {
+          setLoading(true);
+          const trains = await bookingService.getAvailableTrains(
+            formData.departureCity,
+            formData.arrivalCity
+          );
+          setAvailableTrains(trains);
+        } catch (error) {
+          console.error('Error fetching trains:', error);
+          setAvailableTrains([]);
+          if (error.message.includes('Authentication')) {
+          }
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    const timeoutId = setTimeout(fetchTrains, 500);
+    return () => clearTimeout(timeoutId);
+  }, [formData.departureCity, formData.arrivalCity]);
 
   return (
     <Box sx={{ 
@@ -72,7 +147,10 @@ const Ticket = () => {
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
+                name="passengerName"
                 label="Passenger Name"
+                value={formData.passengerName}
+                onChange={handleInputChange}
                 variant="outlined"
                 InputProps={{
                   startAdornment: <PersonIcon sx={{ mr: 1, color: theme.palette.primary.main }} />
@@ -80,14 +158,42 @@ const Ticket = () => {
               />
             </Grid>
             <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>Class</InputLabel>
-                <Select defaultValue="business">
-                  <MenuItem value="business">Business</MenuItem>
-                  <MenuItem value="casual">Casual</MenuItem>
-                </Select>
-              </FormControl>
+              <TextField
+                fullWidth
+                name="departureCity"
+                label="Departure City"
+                value={formData.departureCity}
+                onChange={handleInputChange}
+                variant="outlined"
+              />
             </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                name="arrivalCity"
+                label="Arrival City"
+                value={formData.arrivalCity}
+                onChange={handleInputChange}
+                variant="outlined"
+              />
+            </Grid>
+            {availableTrains.length > 0 && (
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Select Train</InputLabel>
+                  <Select
+                    value={selectedTrain?.id || ''}
+                    onChange={(e) => setSelectedTrain(availableTrains.find(t => t.id === e.target.value))}
+                  >
+                    {availableTrains.map(train => (
+                      <MenuItem key={train.id} value={train.id}>
+                        {train.name} - Departure: {train.departureTime}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+            )}
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
@@ -150,13 +256,19 @@ const Ticket = () => {
         </Box>
 
         <Box className="ticket-footer">
-          <Button variant="contained" color="primary">
-            Book Now
+          <Button 
+            variant="contained" 
+            color="primary"
+            onClick={handleBooking}
+            disabled={loading || !selectedTrain}
+          >
+            {loading ? <CircularProgress size={24} /> : 'Book Now'}
           </Button>
         </Box>
       </Paper>
 
       <Grid container spacing={3} sx={{ mt: 4 }}>
+        {/* Weather Widget */}
         <Grid item xs={12} md={4}>
           <Card elevation={3} sx={{ backgroundColor: '#333', color: '#fff', borderRadius: '16px' }}>
             <CardContent>
@@ -202,7 +314,7 @@ const Ticket = () => {
                 <li>Express line to Springfield</li>
                 <li>New coastal route to Seaside</li>
                 <li>Direct service to Mountainview</li>
-                <li>Expanded service to Rivertown</li>
+                <li>Expandedservice to Rivertown</li>
               </Typography>
             </CardContent>
           </Card>
@@ -225,6 +337,7 @@ const Ticket = () => {
         </Grid>
       </Grid>
 
+      {/* Seat Selection Dialog */}
       <Dialog open={seatDialogOpen} onClose={toggleSeatDialog} maxWidth="md" fullWidth>
         <DialogTitle>
           Select Seats
@@ -289,7 +402,7 @@ const Ticket = () => {
                   </Box>
                 </Box>
               ))}
-
+              
               <Box className="class-divider">
                 <Typography variant="caption">Business Class End</Typography>
               </Box>
